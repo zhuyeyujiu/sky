@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.IOException;
 import java.sql.SQLIntegrityConstraintViolationException;
 
 /**
@@ -42,5 +43,17 @@ public class GlobalExceptionHandler {
             return Result.error(msg);
         }
         return Result.error(MessageConstant.UNKNOWN_ERROR);
+    }
+
+
+    /**
+     * 文件上传失败异常
+     * @param ex
+     * @return
+     */
+    @ExceptionHandler
+    public Result exceptionHandler(IOException ex){
+        log.error("异常信息：{}", ex.getMessage());
+        return Result.error(MessageConstant.UPLOAD_FAILED);
     }
 }

@@ -40,10 +40,4 @@ public interface SetmealDishMapper {
     List<SetmealDish> getByDishId(Long setmealId);
 
 
-    /**
-     * 根据套餐id查询套餐菜品关系
-     * @param id
-     * @return
-     */
-    List<Integer> getDishesStatusListBySetmealId(Long id);
 }

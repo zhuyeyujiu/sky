@@ -27,11 +27,5 @@
     </select>
 
 
-    <select id="getDishesStatusListBySetmealId" resultType="java.lang.Integer">
-        SELECT d.status
-        FROM dish d LEFT JOIN setmeal_dish sd ON d.id = sd.dish_id
-        WHERE d.id IN (
-            SELECT dish_id FROM setmeal_dish WHERE setmeal_id = #{setmealId}
-        );
-    </select>
+
 </mapper>

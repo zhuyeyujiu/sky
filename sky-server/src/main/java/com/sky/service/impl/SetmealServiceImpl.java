@@ -152,10 +152,11 @@ public class SetmealServiceImpl implements SetmealService {
      * @param id
      */
     @Override
+    @Transactional
     public void startOrStop(Integer status, Long id) {
         if (status == StatusConstant.ENABLE) {
             // 起售时 如果套餐关联的菜品有一个停售 则不能起售
-            List<Integer> setmealDishesStatusList = setmealDishMapper.getDishesStatusListBySetmealId(id);
+            List<Integer> setmealDishesStatusList = setmealMapper.getDishesStatusListBySetmealId(id);
             for (Integer setmealDishStatus : setmealDishesStatusList) {
                 if (setmealDishStatus == StatusConstant.DISABLE) {
                     throw new DeletionNotAllowedException("起售失败，套餐中关联了停售的菜品");

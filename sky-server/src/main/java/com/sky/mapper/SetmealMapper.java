@@ -10,6 +10,8 @@ import com.sky.vo.SetmealVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 @Mapper
 public interface SetmealMapper {
 
@@ -63,6 +65,14 @@ public interface SetmealMapper {
     @AutoFill(value = OperationType.UPDATE)
     void update(Setmeal setmeal);
 
+
+
+    /**
+     * 根据套餐id查询套餐菜品关系
+     * @param id
+     * @return
+     */
+    List<Integer> getDishesStatusListBySetmealId(Long id);
 
 
 }

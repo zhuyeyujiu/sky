@@ -9,4 +9,77 @@
         insert into setmeal (name, category_id, price, image, description, status, create_time, update_time, create_user, update_user)
         values (#{name}, #{categoryId}, #{price}, #{image}, #{description}, #{status}, #{createTime}, #{updateTime}, #{createUser}, #{updateUser})
     </insert>
+
+    <!--更新套餐-->
+    <update id="update">
+        update setmeal
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="image != null">image = #{image},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--批量删除-->
+    <delete id="deleteBatch">
+        delete from setmeal where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+
+    <!--定义关联表数据-->
+    <resultMap id="SetmealResultMap" type="com.sky.vo.SetmealVO">
+        <!-- 直接映射 SetmealVO 的字段 -->
+        <id column="id" property="id"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="name" property="name"/>
+        <result column="price" property="price"/>
+        <result column="status" property="status"/>
+        <result column="description" property="description"/>
+        <result column="image" property="image"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="category_name" property="categoryName"/>
+
+        <!-- 处理 List<SetmealDish> 关联关系 -->
+        <collection property="setmealDishes" ofType="com.sky.entity.SetmealDish">
+            <id column="sm_id" property="id"/>
+            <result column="setmeal_id" property="setmealId"/>
+            <result column="dish_id" property="dishId"/>
+            <result column="name" property="name"/>
+            <result column="price" property="price"/>
+        </collection>
+    </resultMap>
+
+
+    <!--分页查询-->
+    <select id="pageQuery" resultMap="SetmealResultMap">
+        SELECT
+            s.id, s.category_id, s.name, s.price, s.status,
+            s.description, s.image, s.update_time, c.name as category_name,
+            sm.id as sm_id, sm.setmeal_id, sm.dish_id, sm.name, sm.price
+        FROM setmeal s
+                 LEFT JOIN category c ON s.category_id = c.id
+                 LEFT JOIN setmeal_dish sm ON s.id = sm.setmeal_id
+        <where>
+            <if test="name != null and name != ''">
+                AND s.name LIKE concat('%', #{name}, '%')
+            </if>
+            <if test="categoryId != null">
+                AND s.category_id = #{categoryId}
+            </if>
+            <if test="status != null">
+                AND s.status = #{status}
+            </if>
+        </where>
+
+    </select>
+
+
 </mapper>

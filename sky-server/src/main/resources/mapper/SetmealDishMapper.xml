@@ -10,11 +10,28 @@
         </foreach>
     </insert>
 
+    <!--批量删除-->
+    <delete id="deleteBatchBySetmealIds">
+        delete from setmeal_dish where setmeal_id in
+        <foreach collection="setmealIds" item="setmealId" open="(" separator="," close=")">
+            #{setmealId}
+        </foreach>
+    </delete>
+
 
     <select id="getSetmealIdsByDishIds" resultType="java.lang.Long">
         select setmeal_id from setmeal_dish where dish_id in
         <foreach collection="list" item="dishId" open="(" separator="," close=")">
             #{dishId}
         </foreach>
+    </select>
+
+
+    <select id="getDishesStatusListBySetmealId" resultType="java.lang.Integer">
+        SELECT d.status
+        FROM dish d LEFT JOIN setmeal_dish sd ON d.id = sd.dish_id
+        WHERE d.id IN (
+            SELECT dish_id FROM setmeal_dish WHERE setmeal_id = #{setmealId}
+        );
     </select>
 </mapper>

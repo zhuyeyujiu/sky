@@ -20,6 +20,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.Arrays;
 import java.util.List;
@@ -157,4 +158,39 @@ public class DishServiceImpl implements DishService {
             dishFlavorMapper.insertBatch(flavors);
         }
     }
+
+
+    /**
+     * 菜品起售停售
+     * @param status
+     * @param id
+     */
+    @Override
+    public void startOrStop(Integer status, Long id) {
+        // 1.菜品的停售起售
+        Dish dish = Dish.builder()
+                .id(id)
+                .status(status)
+                .build();
+        dishMapper.update(dish);
+
+        // TODO 菜品包含的套餐停售起售
+
+
+    }
+
+
+    /**
+     *
+     * @param categoryId
+     * @return
+     */
+    @Override
+    public List<Dish> GetByCategoryId(Long categoryId) {
+        List<Dish> list = dishMapper.getByCategoryId(categoryId);
+        return list;
+
+    }
+
+
 }

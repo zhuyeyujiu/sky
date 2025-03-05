@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -86,7 +87,7 @@ public class SetmealServiceImpl implements SetmealService {
      */
     @Override
     @Transactional
-    public void deleteBatch(Long[] ids) {
+    public void deleteBatch(List<Long> ids) {
         for (Long id : ids) {
             Setmeal setmeal = setmealMapper.getById(id);
             if (setmeal.getStatus() == StatusConstant.ENABLE) {
@@ -135,7 +136,7 @@ public class SetmealServiceImpl implements SetmealService {
         setmealMapper.update(setmeal);
 
         // 删除套餐表中的菜品数据
-        setmealDishMapper.deleteBatchBySetmealIds(new Long[]{setmealDTO.getId()});
+        setmealDishMapper.deleteBatchBySetmealIds(Arrays.asList(setmealDTO.getId()));
 
         // 添加套餐表中的菜品数据
         List<SetmealDish> setmealDishes = setmealDTO.getSetmealDishes();

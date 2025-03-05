@@ -14,7 +14,7 @@ public interface SetmealService {
 
     PageResult pageQuery(SetmealPageQueryDTO setmealPageQueryDTO);
 
-    void deleteBatch(Long[] ids);
+    void deleteBatch(List<Long> ids);
 
     SetmealVO getByIdWithDish(Long id);
 

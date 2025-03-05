@@ -55,7 +55,7 @@ public interface SetmealMapper {
      * 批量删除
      * @param ids
      */
-    void deleteBatch(Long[] ids);
+    void deleteBatch(List<Long> ids);
 
 
     /**

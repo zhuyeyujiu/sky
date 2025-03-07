@@ -37,10 +37,10 @@ public class OrderDetail implements Serializable {
     private String dishFlavor;
 
     //数量
-    private Integer number;
+    private Integer dishNumber;
 
     //金额
-    private BigDecimal amount;
+    private BigDecimal dishAmount;
 
     //图片
     private String image;

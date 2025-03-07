@@ -2,10 +2,12 @@ package com.sky.controller.user;
 
 import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
+import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.OrderService;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +40,6 @@ public class OrderController {
 
     /**
      * 订单支付
-     *
      * @param ordersPaymentDTO
      * @return
      */
@@ -51,5 +52,31 @@ public class OrderController {
         // 模拟支付成功
         orderService.paySuccess(ordersPaymentDTO.getOrderNumber());
         return Result.success(orderPaymentVO);
+    }
+
+
+    /**
+     * 查询订单信息
+     * @param id
+     * @return
+     */
+    @GetMapping("/orderDetail/{id}")
+    @ApiOperation("查询订单信息")
+    public Result<OrderVO> getOrderDetail(@PathVariable Long id){
+        log.info("查询订单信息：{}", id);
+        OrderVO orderVO = orderService.getOrderDetail(id);
+        return Result.success(orderVO);
+    }
+
+
+    /**
+     * 查询历史订单
+     */
+    @GetMapping("/historyOrders")
+    @ApiOperation("查询历史订单")
+    public Result<PageResult> historyOrders(String page, String pageSize, String status){
+        log.info("pageNum:{},pageSize:{},status:{}",page,pageSize,status);
+        PageResult pageResult = orderService.historyOrders(page, pageSize, status);
+        return Result.success(pageResult);
     }
 }

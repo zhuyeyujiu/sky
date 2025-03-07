@@ -1,6 +1,9 @@
 package com.sky.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.fasterxml.jackson.databind.ser.Serializers;
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
 import com.sky.dto.OrdersPaymentDTO;
@@ -9,13 +12,19 @@ import com.sky.entity.*;
 import com.sky.exception.AddressBookBusinessException;
 import com.sky.exception.OrderBusinessException;
 import com.sky.mapper.*;
+import com.sky.result.PageResult;
+import com.sky.result.Result;
 import com.sky.service.OrderService;
+import com.sky.vo.DishVO;
 import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,6 +87,7 @@ public class OrderServiceImpl implements OrderService {
         orders.setPhone(addressBook.getPhone()); // 手机号
         orders.setConsignee(addressBook.getConsignee()); // 收货人
         orders.setUserId(userId); // 用户id
+        orders.setAddress(addressBook.getDetail());// 收货地址
 
         orderMapper.insert(orders);
 
@@ -159,5 +169,53 @@ public class OrderServiceImpl implements OrderService {
 
         orderMapper.update(orders);
     }
+
+
+    /**
+     * 获取订单信息
+     * @param id
+     * @return
+     */
+    @Override
+    @ApiOperation("查询订单信息")
+    public OrderVO getOrderDetail(Long id) {
+        Orders orders = orderMapper.getOrderById(id);
+        OrderVO orderVO = new OrderVO();
+        BeanUtils.copyProperties(orders, orderVO);
+
+        List<OrderDetail> orderDetailList = orderDetailMapper.listByOrderId(id);
+        orderVO.setOrderDetailList(orderDetailList);
+        log.info("订单信息：{}", orderVO);
+        return orderVO;
+    }
+
+
+    /**
+     * 历史订单分页查询
+     * @param page
+     * @param pageSize
+     * @param status
+     * @return
+     */
+    @Override
+    public PageResult historyOrders(String page,String pageSize, String status) {
+        if(page != null && pageSize != null){
+            Integer pageNum = Integer.parseInt(page);
+            Integer pageSizeNum = Integer.parseInt(pageSize);
+            PageHelper.startPage(pageNum, pageSizeNum);
+
+            Long userId = BaseContext.getCurrentId();
+
+            Page<OrderVO> pageResult = orderMapper.page(userId, status);
+
+            log.info("分页查询结果：{}", pageResult);
+
+            return new PageResult(pageResult.getTotal(),pageResult.getResult());
+        }
+
+        return null;
+
+    }
+
 
 }

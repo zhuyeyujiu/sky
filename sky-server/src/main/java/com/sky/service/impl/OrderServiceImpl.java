@@ -15,10 +15,7 @@ import com.sky.mapper.*;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.service.OrderService;
-import com.sky.vo.DishVO;
-import com.sky.vo.OrderPaymentVO;
-import com.sky.vo.OrderSubmitVO;
-import com.sky.vo.OrderVO;
+import com.sky.vo.*;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -31,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -177,7 +175,6 @@ public class OrderServiceImpl implements OrderService {
      * @return
      */
     @Override
-    @ApiOperation("查询订单信息")
     public OrderVO getOrderDetail(Long id) {
         Orders orders = orderMapper.getOrderById(id);
         OrderVO orderVO = new OrderVO();
@@ -206,7 +203,16 @@ public class OrderServiceImpl implements OrderService {
 
             Long userId = BaseContext.getCurrentId();
 
-            Page<OrderVO> pageResult = orderMapper.page(userId, status);
+            Orders orders = Orders.builder()
+                    .userId(userId)
+                    .build();
+
+            if(status != null){
+                orders.setStatus(Integer.parseInt(status));
+            }
+
+
+            Page<OrderVO> pageResult = orderMapper.page(orders, null, null);
 
             log.info("分页查询结果：{}", pageResult);
 
@@ -217,5 +223,128 @@ public class OrderServiceImpl implements OrderService {
 
     }
 
+
+    /**
+     * 取消订单
+     * @param id
+     */
+    @Override
+    public void cancel(Long id) {
+        // 查询当前订单状态
+        Orders orders = orderMapper.getOrderById(id);
+
+        if(orders == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }else if(orders.getStatus() == Orders.TO_BE_CONFIRMED){
+            // 未接单时可以无条件取消订单
+            orders.setStatus(Orders.CANCELLED);
+            orders.setCancelTime(LocalDateTime.now());
+            orderMapper.update(orders);
+            // TODO 状态为接单时 需要与商家协商取消订单
+        }else{
+            // 其他情况暂时不接受订单取消操作
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
+    }
+
+
+    /**
+     * 再来一单
+     * @param id
+     */
+    @Override
+    @Transactional
+    public void repetition(Long id) {
+        Orders orders = orderMapper.getOrderById(id);
+        List<OrderDetail> orderDetailList = orderDetailMapper.listByOrderId(id);
+
+        if(orders == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }else{
+            orders.setStatus(Orders.PENDING_PAYMENT);
+            orders.setId(null);
+            orders.setNumber(String.valueOf(System.currentTimeMillis()));
+            orders.setOrderTime(LocalDateTime.now());
+            orders.setPayStatus(Orders.UN_PAID);
+            orders.setCheckoutTime(null);
+            orders.setCancelTime(null);
+            orders.setRejectionReason(null);
+            orderMapper.insert(orders);
+            for (OrderDetail orderDetail : orderDetailList) {
+                orderDetail.setId(null);
+                orderDetail.setOrderId(orders.getId());
+            }
+            orderDetailMapper.insertBatch(orderDetailList);
+        }
+
+    }
+
+
+    /**
+     * 条件查询
+     * @param page
+     * @param pageSize
+     * @param number
+     * @param beginTime
+     * @param endTime
+     * @param phone
+     * @param status
+     * @return
+     */
+    @Override
+    public PageResult conditionSearch(String page, String pageSize, String number, String beginTime, String endTime, String phone, String status) {
+        if(page != null && pageSize != null){
+            Integer pageNum = Integer.parseInt(page);
+            Integer pageSizeNum = Integer.parseInt(pageSize);
+
+            Orders orders = Orders.builder()
+                    .number(number)
+                    .phone(phone)
+                    .build();
+
+            if(status != null){
+                orders.setStatus(Integer.parseInt(status));
+            }
+
+
+            Page<OrderVO> pageResult = orderMapper.page(orders, beginTime, endTime);
+
+
+            log.info("分页查询结果：{}", pageResult);
+
+            return new PageResult(pageResult.getTotal(),pageResult.getResult());
+        }
+
+        return null;
+    }
+
+
+    /**
+     * 各个状态的订单数量
+     * @return
+     */
+    @Override
+    public OrderStatisticsVO statistics() {
+        List<Orders> ordersList = orderMapper.list();
+        OrderStatisticsVO orderStatisticsVO = new OrderStatisticsVO();
+        Integer toBeConfirmed = 0;
+        Integer confirmed = 0;
+        Integer deliveryInProgress = 0;
+
+        for (Orders orders : ordersList) {
+            if(orders.getStatus() == Orders.TO_BE_CONFIRMED)
+                toBeConfirmed++;
+            else if(orders.getStatus() == Orders.CONFIRMED)
+                confirmed++;
+            else if(orders.getStatus() == Orders.DELIVERY_IN_PROGRESS)
+                deliveryInProgress++;
+        }
+        orderStatisticsVO.setToBeConfirmed(toBeConfirmed);
+        orderStatisticsVO.setConfirmed(confirmed);
+        orderStatisticsVO.setDeliveryInProgress(deliveryInProgress);
+        return orderStatisticsVO;
+
+    }
 
 }

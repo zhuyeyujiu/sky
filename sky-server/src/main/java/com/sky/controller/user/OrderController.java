@@ -79,4 +79,30 @@ public class OrderController {
         PageResult pageResult = orderService.historyOrders(page, pageSize, status);
         return Result.success(pageResult);
     }
+
+
+
+    /**
+     * 取消订单
+     * @param id
+     */
+    @ApiOperation("取消订单")
+    @PutMapping("/cancel/{id}")
+    public Result cancel(@PathVariable Long id){
+        log.info("取消订单：{}", id);
+        orderService.cancel(id);
+        return Result.success();
+    }
+
+
+    /**
+     * 再来一单
+     */
+    @ApiOperation("再来一单")
+    @PostMapping("/repetition/{id}")
+    public Result repetition(@PathVariable Long id){
+        log.info("再来一单：{}", id);
+        orderService.repetition(id);
+        return Result.success();
+    }
 }

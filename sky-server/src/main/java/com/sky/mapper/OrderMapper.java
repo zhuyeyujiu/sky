@@ -6,6 +6,8 @@ import com.sky.vo.OrderVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 @Mapper
 public interface OrderMapper {
 
@@ -40,8 +42,16 @@ public interface OrderMapper {
 
     /**
      * 分页查询订单
-     * @param userId
+     * @param orders
      * @return
      */
-    Page<OrderVO> page(Long userId, String status);
+    Page<OrderVO> page(Orders orders,String beginTime, String endTime);
+
+
+    /**
+     * 查询订单
+     * @return
+     */
+    @Select(("select * from orders"))
+    List<Orders> list();
 }

@@ -4,6 +4,7 @@ import com.sky.dto.OrdersPaymentDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.result.PageResult;
 import com.sky.vo.OrderPaymentVO;
+import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
 
@@ -40,4 +41,39 @@ public interface OrderService {
      * @return
      */
     PageResult historyOrders(String pageNum, String pageSize, String status);
+
+
+    /**
+     * 取消订单
+     * @param id
+     */
+    void cancel(Long id);
+
+
+    /**
+     * 再来一单
+     * @param id
+     */
+    void repetition(Long id);
+
+
+    /**
+     * 条件搜索订单
+     * @param page
+     * @param pageSize
+     * @param number
+     * @param beginTime
+     * @param endTime
+     * @param phone
+     * @param status
+     * @return
+     */
+    PageResult conditionSearch(String page, String pageSize, String number, String beginTime, String endTime, String phone, String status);
+
+
+    /**
+     * 各个状态的订单数量
+     * @return
+     */
+    OrderStatisticsVO statistics();
 }

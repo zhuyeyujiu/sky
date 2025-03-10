@@ -1,34 +1,34 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.fasterxml.jackson.databind.ser.Serializers;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.sky.constant.MessageConstant;
 import com.sky.context.BaseContext;
-import com.sky.dto.OrdersPaymentDTO;
-import com.sky.dto.OrdersSubmitDTO;
+import com.sky.dto.*;
 import com.sky.entity.*;
 import com.sky.exception.AddressBookBusinessException;
 import com.sky.exception.OrderBusinessException;
 import com.sky.mapper.*;
 import com.sky.result.PageResult;
-import com.sky.result.Result;
 import com.sky.service.OrderService;
 import com.sky.vo.*;
-import io.swagger.annotations.ApiOperation;
+import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import org.springframework.core.annotation.Order;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
+
 
 @Service
 @Slf4j
@@ -48,6 +48,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private WebSocketServer webSocketServer;
 
 
     /**
@@ -95,6 +98,9 @@ public class OrderServiceImpl implements OrderService {
         for(ShoppingCart cart : shoppingCartList){
             OrderDetail orderDetail = new OrderDetail(); // 订单明细对象
             BeanUtils.copyProperties(cart, orderDetail);
+            // 修改过实体类 所以复制不上去
+            orderDetail.setDishNumber(cart.getNumber());
+            orderDetail.setDishAmount(cart.getAmount());
             orderDetail.setOrderId(orders.getId()); // 订单id
             orderDetailList.add(orderDetail);
         }
@@ -166,6 +172,16 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
+
+        // 通过websocket发送消息 type orderId content
+        Map map = new HashMap();
+        map.put("type", 1);
+        map.put("orderId", ordersDB.getId());
+        map.put("content", "订单号：" + ordersDB.getNumber());
+
+        String json = JSON.toJSONString(map);
+
+        webSocketServer.sendToAllClient(json);
     }
 
 
@@ -207,7 +223,7 @@ public class OrderServiceImpl implements OrderService {
                     .userId(userId)
                     .build();
 
-            if(status != null){
+            if(status != null && status != ""){
                 orders.setStatus(Integer.parseInt(status));
             }
 
@@ -346,5 +362,118 @@ public class OrderServiceImpl implements OrderService {
         return orderStatisticsVO;
 
     }
+
+
+    /**
+     * 拒单
+     * @param ordersRejectionDTO
+     */
+    @Override
+    public void rejection(OrdersRejectionDTO ordersRejectionDTO) {
+        Orders orders = orderMapper.getOrderById(ordersRejectionDTO.getId());
+        if(orders == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }else{
+            orders.setStatus(Orders.CANCELLED);
+            orders.setRejectionReason(ordersRejectionDTO.getRejectionReason());
+            orders.setCancelTime(LocalDateTime.now());
+            orderMapper.update(orders);
+        }
+
+    }
+
+
+    /**
+     * 接单
+     * @param ordersConfirmDTO
+     */
+    @Override
+    public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
+        Orders orders = orderMapper.getOrderById(ordersConfirmDTO.getId());
+        if(orders == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }else{
+            orders.setStatus(Orders.CONFIRMED);
+            orderMapper.update(orders);
+        }
+
+    }
+
+
+    /**
+     * 商家取消订单
+     * @param ordersCancelDTO
+     */
+    @Override
+    public void adminCancel(OrdersCancelDTO ordersCancelDTO) {
+        Orders orders = orderMapper.getOrderById(ordersCancelDTO.getId());
+        if(orders == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }else{
+            orders.setStatus(Orders.CANCELLED);
+            orders.setCancelReason(ordersCancelDTO.getCancelReason());
+            orders.setCancelTime(LocalDateTime.now());
+            orderMapper.update(orders);
+        }
+
+    }
+
+
+
+    /**
+     * 派送订单
+     * @param id
+     */
+    @Override
+    public void delivery(Long id) {
+        Orders orders = orderMapper.getOrderById(id);
+        if(orders == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }else{
+            orders.setStatus(Orders.DELIVERY_IN_PROGRESS);
+            orderMapper.update(orders);
+        }
+
+    }
+
+
+    /**
+     * 完成订单
+     * @param id
+     */
+    @Override
+    public void complete(Long id) {
+        Orders orders = orderMapper.getOrderById(id);
+        if(orders == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }else{
+            orders.setStatus(Orders.COMPLETED);
+            orders.setDeliveryTime(LocalDateTime.now());
+            orderMapper.update(orders);
+        }
+
+    }
+
+
+    /**
+     * 催单
+     * @param id
+     */
+    @Override
+    public void reminder(Long id) {
+        Orders orders = orderMapper.getOrderById(id);
+        if(orders == null){
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }else{
+            Map map = new HashMap();
+            map.put("type", 2);
+            map.put("orderId", id);
+            map.put("content", "订单号：" + orders.getNumber());
+            String jsonString = JSON.toJSONString(map);
+            webSocketServer.sendToAllClient(jsonString);
+        }
+
+    }
+
 
 }

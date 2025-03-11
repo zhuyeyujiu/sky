@@ -2,8 +2,10 @@ package com.sky.service.impl;
 
 import com.sky.entity.Orders;
 import com.sky.mapper.OrderMapper;
+import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
 import com.sky.vo.TurnoverReportVO;
+import com.sky.vo.UserReportVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ public class ReportServiceImpl implements ReportService {
     @Autowired
     private OrderMapper orderMapper;
 
+    @Autowired
+    private UserMapper userMapper;
+
 
 
     /**
@@ -36,15 +41,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     public TurnoverReportVO getTurnoverStatistics(LocalDate begin, LocalDate end) {
         // 当前集合用于存放Begin到End范围内的每天的日期
-        List<LocalDate> dateList = new ArrayList<>();
-
-        dateList.add(begin);
-
-        while (!begin.equals(end)){
-            // 日期加1
-            begin = begin.plusDays(1);
-            dateList.add(begin);
-        }
+        List<LocalDate> dateList = getBetweenDates(begin, end);
 
         // 创建集合，用于存放日期对应的营业额数据
         List<Double> turnoverList = new ArrayList<>();
@@ -72,5 +69,68 @@ public class ReportServiceImpl implements ReportService {
                .dateList(StringUtils.join(dateList,","))
                .turnoverList(StringUtils.join(turnoverList,","))
                .build();
+    }
+
+
+    /**
+     * 用户数据统计
+     * @param begin
+     * @param end
+     * @return
+     */
+    @Override
+    public UserReportVO getUserStatistics(LocalDate begin, LocalDate end) {
+        // 当前集合用于存放Begin到End范围内的每天的日期
+        List<LocalDate> dateList = getBetweenDates(begin, end);
+
+        // 每日新增用户数量 select count(id) from user where create_time >= ? and create_time < ?
+        List<Integer> newUserList = new ArrayList<>();
+        // 每日总用户数量 select count(id) from user where create_time < ?
+        List<Integer> totalUserList = new ArrayList<>();
+
+        for(LocalDate date : dateList){
+            LocalDateTime beginTime = LocalDateTime.of(date, LocalTime.MIN);
+            LocalDateTime endTime = LocalDateTime.of(date, LocalTime.MAX);
+            Map map = new HashMap();
+
+            // 查询总用户数量
+            map.put("end",endTime);
+            Integer totalUser = userMapper.countByMap(map);
+
+            // 查询新增用户数量
+            map.put("begin",beginTime);
+            Integer newUser = userMapper.countByMap(map);
+
+            totalUserList.add(totalUser);
+            newUserList.add(newUser);
+        }
+        return UserReportVO.builder()
+                .dateList(StringUtils.join(dateList,","))
+                .newUserList(StringUtils.join(newUserList,","))
+                .totalUserList(StringUtils.join(totalUserList,","))
+                .build();
+
+    }
+
+
+
+
+
+
+    /**
+     * 获取两个日期之间的所有日期
+     * @param begin
+     * @param end
+     * @return
+     */
+    private List<LocalDate> getBetweenDates(LocalDate begin, LocalDate end) {
+        List<LocalDate> result = new ArrayList<>();
+        result.add(begin);
+        while (!begin.equals(end)) {
+            // 日期加1
+            begin = begin.plusDays(1);
+            result.add(begin);
+        }
+        return result;
     }
 }
